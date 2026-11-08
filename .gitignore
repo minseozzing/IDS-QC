@@ -1,0 +1,15 @@
+# 비밀 정보
+.env
+*.key
+*.pem
+credentials*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# 실행 산출물 (필요하면 개별적으로 add)
+results/
+*.log
+~$*
