@@ -19,12 +19,22 @@ Suricata 엔진 자체의 버그가 아니라, 엔진 위에 올린 **룰이 의
 | 미탐 | 대소문자·URL 인코딩 같은 우회에도 잡는가 |
 | 회귀 | 룰을 고친 뒤 기존 동작이 깨지지 않는가 |
 
-## 현재까지의 결과 (REQ-01·02, 룰 rev1)
+## 현재까지의 결과 (REQ-01·02)
 
-- TC 10개 실행 → **Pass 7 / Fail 3**
-- 결함 2건 발견
-  - [DEF-001](docs/defects/DEF-001.md) 미탐 (Major): `/ADMIN` 대문자 우회를 놓침
-  - [DEF-002](docs/defects/DEF-002.md) 오탐 (Minor, IPS 차단 모드 시 Major): `/admin2`, `/blog/admin-tips`에 경보 발생
+발견 → 보고 → 수정 → 재검증 사이클을 한 번 완료했습니다.
+
+| 단계 | 내용 | 결과 |
+|---|---|---|
+| 1. 발견 (룰 rev1) | TC 10개 실행 | **Pass 7 / Fail 3** → 결함 2건 |
+| 2. 보고 | 결함 리포트 작성 | [DEF-001](docs/defects/DEF-001.md), [DEF-002](docs/defects/DEF-002.md) |
+| 3. 수정 (룰 rev2) | `nocase`, `startswith`, `pcre` 경로 경계 추가 | [rules/local.rules](rules/local.rules) (rev1은 `local.rules.rev1`에 보관) |
+| 4. 재검증 | TC 10개 전체 재실행 (2026-11-08) | **Pass 10 / Fail 0**, 기존 Pass 7개 회귀 없음 |
+
+- [DEF-001](docs/defects/DEF-001.md) 미탐 (Major): `/ADMIN` 대문자 우회를 놓침 → **해결 확인 (rev2)**
+- [DEF-002](docs/defects/DEF-002.md) 오탐 (Minor, IPS 차단 모드 시 Major): `/admin2`, `/blog/admin-tips`에 경보 발생 → **해결 확인 (rev2)**
+- 회귀 테스트 상세: [docs/03-test-cases.md](docs/03-test-cases.md)
+
+REQ-03~06은 진행 예정입니다. ([진행 현황](docs/PROGRESS.md))
 
 ## 문서 구성
 
@@ -37,8 +47,8 @@ Suricata 엔진 자체의 버그가 아니라, 엔진 위에 올린 **룰이 의
 | [docs/defects/](docs/defects) | 결함 리포트 |
 | [docs/04-environment-issues.md](docs/04-environment-issues.md) | 환경 구축 중 겪은 이슈와 조치 |
 | [docs/05-linux-commands.md](docs/05-linux-commands.md) | 사용한 리눅스 명령어와 이유 |
-| [rules/local.rules](rules/local.rules) | 테스트 대상 룰 |
-| [evidence/](evidence) | 증거 캡처 (eve.json, Wireshark) |
+| [rules/local.rules](rules/local.rules) | 테스트 대상 룰 (현재 rev2, 수정 전 rev1은 `local.rules.rev1`) |
+| [evidence/](evidence) | 증거 캡처 (환경 구축, rev1 결함, rev2 회귀 테스트) |
 | [pcap/](pcap) | 회귀 테스트용 패킷 녹화 파일 |
 
 ## AI 활용 범위

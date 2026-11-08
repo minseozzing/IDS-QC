@@ -1,8 +1,8 @@
 # 테스트케이스 설계 및 실행 결과
 
-대상 룰: `sid:1000002` (TEST Admin Access), **rev 1**
-룰 문장: `content:"/admin"` — `http.uri`에 `/admin`이 어디든 포함되면 경보 (nocase 없음, 경계 검사 없음)
-실행일: 2026-11-04 (실제 요청↔경보 대조는 eve.json 출발지 포트 기준)
+대상 룰: `sid:1000002` (TEST Admin Access)
+- **rev 1** (아래 "실행 결과"): `content:"/admin"` — `http.uri`에 `/admin`이 어디든 포함되면 경보 (nocase 없음, 경계 검사 없음). 실행일 2026-11-04, 요청↔경보 대조는 eve.json 출발지 포트 기준
+- **rev 2** (아래 "회귀 테스트"): 결함 수정 후 같은 TC 10개 재실행. 실행일 2026-11-08
 
 ## 룰 목적과 TC 설계 기준
 
@@ -59,7 +59,47 @@ curl.exe --path-as-is http://192.168.56.10/dfwd             # TC-002-10
 ## 룰 rev1 증거 패킷
 
 결함이 있는 상태의 트래픽을 `pcap/tc-002_rule-rev1.pcapng`으로 녹화했다 (정상 1 + 결함 3: `/admin`, `/ADMIN`, `/admin2`, `/blog/admin-tips`).
-룰 수정(rev2) 뒤 같은 파일을 다시 재생해 결함 3건 해소와 정상 1건 유지 여부를 한 번에 확인한다. 연결 과정(TCP)까지 전부 있어야 HTTP를 해석하므로 "표시된 패킷만 내보내기"가 아닌 전체 저장본이어야 한다.
+연결 과정(TCP)까지 전부 있어야 HTTP를 해석하므로 "표시된 패킷만 내보내기"가 아닌 전체 저장본이다. 이 파일을 Suricata로 재생하는 검증은 아직 하지 않았다.
+
+## 룰 수정 (rev1 → rev2)
+
+```
+rev1: content:"/admin";
+rev2: content:"/admin"; nocase; startswith; pcre:"/^\/admin(?:[\/?]|$)/i";
+```
+
+| 추가한 조건 | 해결하려는 것 | 근거 |
+|---|---|---|
+| `nocase` | DEF-001 (`/ADMIN` 미탐) | 대소문자를 무시하고 매칭 |
+| `startswith` | DEF-002 (`/blog/admin-tips` 오탐) | `/admin`이 주소의 **시작 위치**에 있을 때만 매칭 |
+| `pcre:"/^\/admin(?:[\/?]|$)/i"` | DEF-002 (`/admin2` 오탐) | `/admin` 뒤에는 끝, `/`, `?`만 허용하는 **경로 경계** |
+
+변경 파일: `rules/local.rules` (rev2). 수정 전 룰은 `rules/local.rules.rev1`에 보관했다. sid 1000001(ping) 룰은 그대로다.
+
+## 회귀 테스트 (룰 rev2, 2026-11-08)
+
+TC 10개를 전체 재실행했다. rev2 경보만 구분하려고 eve.json에서 `alert.rev==2`인 경보만 필터했다 (수정 전 경보와 분리).
+
+| TC | 입력 | 기대 | rev1 | rev2 | rev2 출발지 포트 |
+|---|---|---|---|---|---|
+| TC-002-01 | `/admin` | O | Pass | Pass | 1819 |
+| TC-002-02 | `/admin/ids` | O | Pass | Pass | 1820 |
+| TC-002-03 | `/ADMIN` | O | **Fail** | Pass | 1821 |
+| TC-002-04 | `/` | X | Pass | Pass | 1822 |
+| TC-002-05 | `/index.html` | X | Pass | Pass | 1823 |
+| TC-002-06 | `/.` | X | Pass | Pass | 1824 |
+| TC-002-07 | `/%61dmin` | O | Pass | Pass | 1825 |
+| TC-002-08 | `/blog/admin-tips` | X | **Fail** | Pass | 1826 |
+| TC-002-09 | `/admin2` | X | **Fail** | Pass | 1827 |
+| TC-002-10 | `/dfwd` | X | Pass | Pass | 1828 |
+
+**결과: rev1 Pass 7 / Fail 3 → rev2 Pass 10 / Fail 0.** 기존에 Pass였던 7개는 모두 그대로 Pass (회귀 없음).
+
+- rev2 경보는 1819, 1820, 1821, 1825 네 건이며 각각 TC-002-01, 02, 03, 07이다. 나머지 6건(04, 05, 06, 08, 09, 10)은 경보 없음.
+- DEF-001 해결: `/ADMIN`(1821)이 탐지됨
+- DEF-002 해결: `/blog/admin-tips`(1826), `/admin2`(1827)에 경보 없음
+- 룰 문법 검사: `suricata -T` 결과 "2 rules successfully loaded, 0 rules failed"
+- 증거: `evidence/05_rev2_rule_loaded.png`, `evidence/06_rev2_regression_10TC.png`, `evidence/07_fastlog_rev1_vs_rev2.png`
 
 ## 추가 예정 TC
 

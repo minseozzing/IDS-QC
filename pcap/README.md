@@ -7,4 +7,4 @@
 저장 형식은 Wireshark 기본값인 pcapng다. Suricata(libpcap)는 pcapng도 읽을 수 있다. 만약 `suricata -r`가 읽지 못하면 Wireshark에서 File → Save As → "Wireshark/tcpdump/... - pcap"으로 다시 저장한다.
 "표시된 패킷만 내보내기"는 TCP 연결 과정이 빠져 Suricata가 HTTP를 해석하지 못하므로 사용하지 않는다. (이 파일은 전체 저장본)
 
-룰 수정(rev2) 후에는 같은 파일을 Suricata에 재생(`suricata -r`)해 결함 해소 여부와 정상 요청 유지 여부를 한 번에 확인한다.
+rev2 회귀 테스트(2026-11-08)는 TC 10개를 실제로 다시 전송해 수행했다. 이 파일을 `suricata -r`로 재생하는 방식은 아직 시도하지 않았으며, 자동화 단계에서 적용할 예정이다.
